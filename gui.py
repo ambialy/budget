@@ -3,50 +3,87 @@ from tkinter import ttk
 import tkcalendar
 from datetime import datetime
 
-root = tk.Tk()
-root.title("Rocket Budgeting")
+class RocketBudget(tk.Tk):
 
-# frame = ttk.Frame(root)
+    def __init__(self):
+        super().__init__()
 
-# want a 6x4 grid window
+        self.title('Rocket Budgeting')
+        self.geometry('700x700')
 
-lbl_transaction = ttk.Label(root, text="Add a new transaction")
-# lbl_transaction.grid(row=0, column=0, columnspan=4)
-lbl_transaction.pack(pady=10)
+        style = ttk.Style()
+        style.theme_use('clam')
 
-style = ttk.Style()
-style.theme_use('clam')  # -> uncomment this line if the styling does not work
+        self.notebook = ttk.Notebook(self)
+        self.notebook.grid()
 
-# Old calendar stuff
-cal = tkcalendar.Calendar(root, selectmode='day', year=datetime.today().year,
+        self.frame_add_trans = ttk.Frame(self.notebook, width=680, height=680)
+        self.frame_view_trans = ttk.Frame(self.notebook, width=680, height=680)
+
+        self.frame_add_trans.grid()
+        self.frame_view_trans.grid()
+
+        # "title"
+        self.lbl_trans = ttk.Label(self.frame_add_trans, text='Add a new transaction', background=None)
+        self.lbl_trans.grid(column=1, row=0, pady=10)
+
+        # calendar stuff
+        self.cal = tkcalendar.Calendar(self.frame_add_trans, selectmode='day', year=datetime.today().year,
                 month=datetime.today().month, day=datetime.today().day)
-cal.pack()
+        self.cal.grid(column=1, row=2, pady=5)
+        self.btn_date = ttk.Button(self.frame_add_trans, text='Select date', command=self.grab_date)
+        self.btn_date.grid(column=1, row=3, pady=5)
+        self.lbl_date = ttk.Label(self.frame_add_trans, text='Selected date: No date selected', foreground='red')
+        self.lbl_date.grid(column=1, row=4, pady=4)
 
-def grab_date():
-    lbl_date.config(text=cal.get_date())
+        # Get amount
+        self.incomeVar = tk.BooleanVar()
+        self.checkBoxIncome = ttk.Checkbutton(
+            self.frame_add_trans, text='Income', command=None, variable=self.incomeVar,
+            onvalue=True, offvalue=False).grid(column=2, row=5)
+        self.lbl_amt = ttk.Label(self.frame_add_trans, text='Enter amount: ')
+        self.lbl_amt.grid(column=0, row=5)
+        self.amtVar = tk.DoubleVar()
+        self.entry_amt = ttk.Entry(self.frame_add_trans, textvariable=self.amtVar)
+        self.entry_amt.grid(column=1, row=5, pady=5)
 
-butt_date = tk.Button(root, text="Select date", command=grab_date)
-butt_date.pack()
-lbl_date = tk.Label(root, text='')
+        # Select Category
+        self.lbl_category = ttk.Label(self.frame_add_trans, text='Choose category: ')
+        self.lbl_category.grid(column=0, row=6)
+        self.categoryVal = tk.StringVar()
+        self.combo_category = ttk.Combobox(self.frame_add_trans, textvariable=self.categoryVal)
+        # TODO replace with db query
+        self.combo_category['values'] = ['Home', 'Personal', "Food", 'Home', 'Personal', "Food",
+                    'Home', 'Personal', "Food", 'Home', 'Personal', "Food",
+                    'Home', 'Personal', "Food", 'Home', 'Personal', "Food"]
+        self.combo_category.state(['readonly'])
+        self.combo_category.grid(column=1, row=6, pady=5)
 
-amountVar = tk.DoubleVar()
-entry_amount = tk.Entry(root, textvariable=amountVar)
-entry_amount.pack(pady=5)
+        # note
+        self.lbl_note = ttk.Label(self.frame_add_trans, text='Add a note (optional): ')
+        self.lbl_note.grid(column=0, row=7)
+        self.noteVar = tk.StringVar()
+        self.entry_note = ttk.Entry(self.frame_add_trans, textvariable=self.noteVar)
+        self.entry_note.grid(column=1, row=7, pady=5)
 
-# ***** Menubar stuff *********
-menubar = tk.Menu(root)
-root.config(menu=menubar)
+        # submit button
+        # TODO write submit command
+        self.btn_submit = ttk.Button(self.frame_add_trans, text='Submit', command=None)
+        self.btn_submit.grid(column=1, row=8)
 
-menu_file = tk.Menu(menubar)
-menu_file.add_command(
-    label='Exit',
-    command=root.destroy
-)
+        # complie notebook
+        self.notebook.add(self.frame_add_trans, text='Add Transaction')
+        self.notebook.add(self.frame_view_trans, text='View Transactions')
 
-menubar.add_cascade(
-    label='File',
-    menu=menu_file
-)
-# ***** Menubar stuff *********
+    def grab_date(self):
+        self.lbl_date.config(text=f"Selected date: {self.cal.get_date()}", foreground='black')
 
-root.mainloop()
+    def submit(self):
+        pass
+
+    def category_query(self):
+        pass
+
+if __name__ == "__main__":
+    rb = RocketBudget()
+    rb.mainloop()
