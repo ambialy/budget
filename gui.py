@@ -3,6 +3,7 @@ from tkinter import ttk
 import tkcalendar
 from datetime import datetime
 import sqlite3
+import time
 
 class RocketBudgeting(tk.Tk):
 
@@ -171,30 +172,77 @@ class EditCategories():
         self.frame = ttk.Frame(self.master.notebook, width=700, height=680)
         self.frame.grid(column=0, row=0, sticky=(tk.N, tk.W, tk.E, tk.S))
 
-        # Select Category
-        self.lbl_category = ttk.Label(self.frame, text='Choose category: ')
-        self.lbl_category.grid(column=0, row=1)
-        self.categoryVal = tk.StringVar()
-        self.combo_category = ttk.Combobox(self.frame, textvariable=self.categoryVal)
-        self._categories = self.master.cur.execute("SELECT category FROM _categories")
-        self.cats = list(self._categories.fetchall())
-        self.cat_list = [cat[0] for cat in self.cats]
-        self.combo_category['values'] = self.cat_list
-        self.combo_category.state(['readonly'])
-        self.combo_category.grid(column=1, row=1, pady=5)
+        # delete a category
+        self.lbl_cat_del = ttk.Label(self.frame, text='Delete a category', background=None)
+        self.lbl_cat_del.grid(column=1, row=0, pady=10)
 
+        # Select Category to delete
+        self.lbl_category_del = ttk.Label(self.frame, text='Choose category: ')
+        self.lbl_category_del.grid(column=0, row=1)
+        self.categoryValDel = tk.StringVar()
+        self.combo_category_del = ttk.Combobox(self.frame, textvariable=self.categoryValDel)
+        self._categories_del = self.master.cur.execute("SELECT category FROM _categories")
+        self.cats_del = list(self._categories_del.fetchall())
+        self.cat_list_del = [cat[0] for cat in self.cats_del]
+        self.combo_category_del['values'] = self.cat_list_del
+        self.combo_category_del.state(['readonly'])
+        self.combo_category_del.grid(column=1, row=1, pady=5)
 
         # Delete button
-        self.btn_submit = ttk.Button(self.frame, text='Delete', command=self.delete_transaction)
-        self.btn_submit.grid(column=2, row=1)
-        self.lbl_success = ttk.Label(self.frame, text='', foreground='green')
-        self.lbl_success.grid(column=1, row=2, pady=5)
+        self.btn_delete = ttk.Button(self.frame, text='Delete', command=self.delete_category)
+        self.btn_delete.grid(column=2, row=1)
+        self.lbl_success_del = ttk.Label(self.frame, text='', foreground='green')
+        self.lbl_success_del.grid(column=1, row=2, pady=5)
 
+        # add a new category
+        self.lbl_trans_add = ttk.Label(self.frame, text='Add a new category', background=None)
+        self.lbl_trans_add.grid(column=1, row=3, pady=10)
+
+        # Enter a new Category
+        self.lbl_category_add = ttk.Label(self.frame, text='Enter category to add: ')
+        self.lbl_category_add.grid(column=0, row=4)
+        self.categoryValAdd = tk.StringVar()
+        self._category_add = ttk.Entry(self.frame, textvariable=self.categoryValAdd)
+        self._category_add.grid(column=1, row=4)
+
+        # Add button
+        self.btn_add = ttk.Button(self.frame, text='Add', command=self.add_category)
+        self.btn_add.grid(column=2, row=4)
+        self.lbl_success_add = ttk.Label(self.frame, text='', foreground='green')
+        self.lbl_success_add.grid(column=1, row=5, pady=5)
 
         self.master.notebook.add(self.frame, text='Edit Categories')
 
-    def delete_transaction(self):
-        category = self.combo_category.get()
+    def add_category(self):
+        category = self._category_add.get().strip().title()
+
+        self._categories_add = self.master.cur.execute("SELECT category FROM _categories")
+        # print(self._categories_add)
+        cats = list(self._categories_add.fetchall())
+        all_categories = [cat[0] for cat in cats]
+
+        if category in all_categories:
+            self.lbl_success_del.config(text='You cannot add a category that exists', foreground='red')
+
+        else:
+            try:
+                self.master.cur.execute("INSERT INTO _categories VALUES (?)", (category, ))
+                self.master.conn.commit()
+                self.lbl_success_add.config(text=f'Successfully added category {category}', foreground='green')
+                self._categories_del = self.master.cur.execute("SELECT category FROM _categories")
+                self.cats_del = list(self._categories_del.fetchall())
+                self.cat_list_del = [cat[0] for cat in self.cats_del]
+                self.combo_category_del['values'] = self.cat_list_del
+                self.combo_category_del.state(['readonly'])
+                self.categoryValAdd = tk.StringVar()
+
+            except sqlite3.Error as e:
+                self.lbl_success_del.config(text=f'Transaction errored: {e}', foreground='red')
+
+
+
+    def delete_category(self):
+        category = self.combo_category_del.get()
         default_categories = ["Auto Parts & Service", "Books & Education", "Bills & Utilities", "Charity", "Coffee Shops", "Credit Card Payment",
                                 "Dining & Drinks", "Entertainment & Recreation", "Family Care", "Fees", "Gas", "Gifts", "Golf", "Groceries",
                                 "Health & Wellness", "Homecare & Supplies", "Income", "Interest Payment", "Investments", "Legal", "Loan Payment", "Medical",
@@ -202,21 +250,21 @@ class EditCategories():
                                 "Taxes", "Travel & Vacation"]
         
         if category in default_categories:
-            self.lbl_success.config(text='You cannot delete a default category', foreground='red')        
+            self.lbl_success_del.config(text='You cannot delete a default category', foreground='red')       
         else:
             try:
                 self.master.cur.execute("DELETE FROM _categories WHERE category=?", (category, ))
                 self.master.conn.commit()
-                self.lbl_success.config(text=f'Successfully deleted category {category}', foreground='green')
-                self.combo_category.set("")
-                self._categories = self.master.cur.execute("SELECT category FROM _categories")
-                self.cats = list(self._categories.fetchall())
-                self.cat_list = [cat[0] for cat in self.cats]
-                self.combo_category['values'] = self.cat_list
-                self.combo_category.state(['readonly'])
+                self.lbl_success_del.config(text=f'Successfully deleted category {category}', foreground='green')
+                self.combo_category_del.set("")
+                self._categories_del = self.master.cur.execute("SELECT category FROM _categories")
+                self.cats_del = list(self._categories_del.fetchall())
+                self.cat_list_del = [cat[0] for cat in self.cats_del]
+                self.combo_category_del['values'] = self.cat_list_del
+                self.combo_category_del.state(['readonly'])
                 
             except sqlite3.Error as e:
-                self.lbl_success.config(text=f'Transaction errored: {e}', foreground='red')
+                self.lbl_success_del.config(text=f'Transaction errored: {e}', foreground='red')
 
 if __name__ == "__main__":
     rb = RocketBudgeting()
